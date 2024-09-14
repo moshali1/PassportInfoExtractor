@@ -1,0 +1,13 @@
+﻿.nav-item ::deep a.active {
+    color: #fef9c3;
+}
+
+﻿::deep .nav-item {
+    transition: transform 0.25s cubic-bezier(.62,1.95,.61,.63), background 0.25s cubic-bezier(.15,.76,.33,1);
+}
+
+::deep .nav-item:active, ::deep .nav-item.active:active {
+    transform: scale(0.95);
+    transition-duration: 0.05s;
+    transition-timing-function: cubic-bezier(.06,.89,.57,1.04);
+}

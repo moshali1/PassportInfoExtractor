@@ -1,0 +1,94 @@
+﻿@*
+    The container div has an onclick event that triggers the Close method,
+    which closes the sidebar when clicking away from the sidebar in mobile view.
+    The sidebar div itself has an @onclick:stopPropagation="true" directive to prevent
+    clicks inside the sidebar from propagating to the container div, thus not triggering the close action.
+*@
+
+@if (isOpen)
+{
+    <div class="relative z-50 lg:hidden" role="dialog" aria-modal="true">
+        <!-- Off-canvas menu backdrop, show/hide based on off-canvas menu state. -->
+        <div class="fixed inset-0 bg-gray-900/80 @backdropStyles" aria-hidden="true"></div>
+
+        <div class="fixed inset-0 flex" @onclick="Close">
+            <!-- Off-canvas menu, show/hide based on off-canvas menu state. -->
+            <div class="relative mr-16 flex w-full max-w-[16rem] flex-1 @offCanvasMenuStyles"> 
+                <!-- Close button, show/hide based on off-canvas menu state. -->
+                <div class="absolute left-full top-0 flex w-16 justify-center pt-5">
+                    <button type="button" class="-m-2.5 p-2.5 @closeButtonStyles" @onclick="Close">
+                        <span class="sr-only">Close sidebar</span>
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Sidebar component -->
+                <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-4 ring-1 ring-white/10" @onclick:stopPropagation="true">
+                    <div class="flex h-16 shrink-0 items-center">
+                        <img class="h-8 w-auto" src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500" alt="Your Company">
+                    </div>
+                    <NavMenu OnSidebarClose="Close" IsMobileView="true" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+
+    private bool isOpen;
+    private string backdropStyles = "transition-opacity ease-linear duration-300 opacity-0";
+    private string offCanvasMenuStyles = "transition ease-in-out duration-300 transform -translate-x-full";
+    private string closeButtonStyles = "transition ease-in-out duration-300 opacity-0";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen != isOpen)
+        {
+            isOpen = IsOpen;
+            if (isOpen)
+            {
+                await Open();
+            }
+        }
+    }
+
+    private async Task Open()
+    {
+        await Task.Delay(50);
+
+        backdropStyles = "transition-opacity ease-linear duration-300 opacity-100";
+        offCanvasMenuStyles = "transition ease-in-out duration-300 transform translate-x-0";
+        StateHasChanged();
+
+        await Task.Delay(300);
+
+        closeButtonStyles = "transition ease-in-out duration-300 opacity-100";
+        StateHasChanged();
+    }
+
+    private async Task Close()
+    {
+        closeButtonStyles = "transition ease-in-out duration-300 opacity-0";
+        StateHasChanged();
+
+        await Task.Delay(50);
+
+        offCanvasMenuStyles = "transition ease-in-out duration-300 transform -translate-x-full";
+        StateHasChanged();
+
+        await Task.Delay(300);
+
+        backdropStyles = "transition-opacity ease-linear duration-300 opacity-0";
+        StateHasChanged();
+
+        await Task.Delay(300);
+
+        isOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

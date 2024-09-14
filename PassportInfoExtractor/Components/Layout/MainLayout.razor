@@ -1,0 +1,74 @@
+﻿@*
+    Update: Changed the sidebar size for the desktop view.
+    - Updated lg:pl-72 to lg:pl-48 for the static sidebar.
+    - Changed lg:w-72 to lg:w-48 for the main content area.
+
+    Update: Changed the sidebar size for mobile view. 
+    Changed max-w-xs to max-w-[16rem]
+*@
+
+@inherits LayoutComponentBase
+
+<div>
+    <!-- Off-canvas sidebar for mobile -->
+    <MobileSidebar @bind-IsOpen="isMobileMenuOpen" />
+
+    <!-- Static sidebar for desktop -->
+    <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-48 lg:flex-col"> 
+        <!-- Sidebar component -->
+        <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-4 pb-4">
+            <div class="flex h-16 shrink-0 items-center">
+                <img class="h-9 w-auto px-2" src="/passport.svg" alt="Data Extractor">
+                <span class="text-gray-300 tracking-tight font-semibold text-lg">
+                    Data Extractor
+                </span>
+            </div>
+            <NavMenu IsMobileView="false" />
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="lg:pl-48"> 
+        <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+            <button type="button" class="-m-2.5 p-2.5 text-gray-700 lg:hidden" @onclick="OpenMobileMenu">
+                <span class="sr-only">Open sidebar</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
+
+            <!-- Separator -->
+            <div class="h-6 w-px bg-gray-900/10 lg:hidden" aria-hidden="true"></div>
+
+            <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+                <!-- Top Section -->
+            </div>
+        </div>
+
+        <main class="py-10">
+            <div class="px-4 sm:px-6 lg:px-8">
+                @Body
+            </div>
+        </main>
+    </div>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload"> Reload</a>
+    <span class="dismiss"> 🗙</span>
+</div>
+
+@code {
+    private bool isMobileMenuOpen = false;
+
+    private void OpenMobileMenu()
+    {
+        isMobileMenuOpen = true;
+    }
+
+    private void CloseMobileMenu()
+    {
+        isMobileMenuOpen = false;
+    }
+}

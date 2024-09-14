@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35201.85
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PassportInfoExtractor", "PassportInfoExtractor\PassportInfoExtractor.csproj", "{47075875-B33C-419A-82EB-3105472F69CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PassportInfoExtractor.Data", "PassportInfoExtractor.Data\PassportInfoExtractor.Data.csproj", "{8D309C3C-F5B5-4733-9FA4-4B734D2E7C13}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{47075875-B33C-419A-82EB-3105472F69CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47075875-B33C-419A-82EB-3105472F69CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47075875-B33C-419A-82EB-3105472F69CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47075875-B33C-419A-82EB-3105472F69CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D309C3C-F5B5-4733-9FA4-4B734D2E7C13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D309C3C-F5B5-4733-9FA4-4B734D2E7C13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D309C3C-F5B5-4733-9FA4-4B734D2E7C13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D309C3C-F5B5-4733-9FA4-4B734D2E7C13}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C830D1BE-C36B-4404-8C4E-937475AF200D}
+	EndGlobalSection
+EndGlobal

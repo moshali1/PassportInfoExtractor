@@ -1,0 +1,63 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<div class="container mx-auto p-6">
+    <!-- Hero Section -->
+    <div class="text-center mb-8">
+        <h1 class="text-5xl font-bold text-gray-800">Welcome to Passport Data Extractor</h1>
+        <p class="text-lg text-gray-600 mt-4">
+            A powerful tool to simplify the extraction and management of passport information. Upload passport images or PDFs, extract key details, and organize them with ease.
+        </p>
+    </div>
+
+    <!-- Features Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-white shadow-lg rounded-lg p-6 transform transition duration-300 hover:-translate-y-2 hover:shadow-xl">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-file-upload text-teal-600 text-3xl mr-4"></i>
+                <h2 class="text-2xl font-semibold text-gray-700">Upload Documents</h2>
+            </div>
+            <p class="text-gray-600">
+                Easily upload passport images or PDF files. Our system will automatically extract important information such as names, dates of birth, passport number, and more.
+            </p>
+        </div>
+
+        <div class="bg-white shadow-lg rounded-lg p-6 transform transition duration-300 hover:-translate-y-2 hover:shadow-xl">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-users text-teal-600 text-3xl mr-4"></i>
+                <h2 class="text-2xl font-semibold text-gray-700">Organize & Group</h2>
+            </div>
+            <p class="text-gray-600">
+                Group extracted information into families or other categories. Sort and manage groups to keep your data organized and easily accessible.
+            </p>
+        </div>
+
+        <div class="bg-white shadow-lg rounded-lg p-6 transform transition duration-300 hover:-translate-y-2 hover:shadow-xl">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-file-excel text-teal-600 text-3xl mr-4"></i>
+                <h2 class="text-2xl font-semibold text-gray-700">Export to Excel</h2>
+            </div>
+            <p class="text-gray-600">
+                Once your data is organized, export it to an Excel file with just a click. Perfect for reporting, record-keeping, or sharing with others.
+            </p>
+        </div>
+
+        <div class="bg-white shadow-lg rounded-lg p-6 transform transition duration-300 hover:-translate-y-2 hover:shadow-xl">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-lock text-teal-600 text-3xl mr-4"></i>
+                <h2 class="text-2xl font-semibold text-gray-700">Secure & Efficient</h2>
+            </div>
+            <p class="text-gray-600">
+                Your data is handled securely with our efficient processing system, ensuring that your sensitive information remains protected at all times.
+            </p>
+        </div>
+    </div>
+
+    <!-- Call to Action Section -->
+    <div class="text-center mt-12">
+        <a href="/upload" class="bg-teal-600 text-white font-bold py-3 px-6 rounded-full hover:bg-teal-700">
+            Get Started
+        </a>
+    </div>
+</div>

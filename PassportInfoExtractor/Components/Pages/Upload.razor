@@ -1,0 +1,407 @@
+﻿@page "/upload"
+@inject IDocumentIntelligenceService DocumentIntelligenceService
+@inject IDatabaseService DatabaseService
+@inject AzureBlobService AzureBlobService
+
+<PageTitle>Upload Passport Document</PageTitle>
+
+<div class="container mx-auto p-2">
+    <!-- Header Section -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-800">Upload Passport Document</h1>
+        <p class="text-lg text-gray-600 mt-4">
+            Upload your passport image or PDF, and let our system handle the extraction of important details. Organize your data seamlessly.
+        </p>
+    </div>
+
+    <!-- Upload Section -->
+    @if (!isUploaded)
+    {
+        <div class="bg-white shadow-lg rounded-lg p-8 transform transition duration-300 hover:shadow-xl">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-file-upload text-teal-600 text-4xl mr-4"></i>
+                <h2 class="text-2xl font-semibold text-gray-700">Select File to Upload</h2>
+            </div>
+            <p class="text-gray-600 mb-6">
+                You can upload a passport image or PDF file. The system will automatically extract essential information such as names, dates of birth, passport number, and more.
+            </p>
+            <div class="flex justify-center items-center border-4 border-dashed border-teal-600 p-8 rounded-lg bg-gray-50">
+                <InputFile OnChange="@HandleFileSelection" class="hidden" id="fileInput" />
+                <label for="fileInput" class="cursor-pointer">
+                    <div class="text-center">
+                        <i class="fas fa-cloud-upload-alt text-teal-600 text-6xl mb-4"></i>
+                        <p class="text-lg font-semibold text-teal-600">Click to Browse File</p>
+                        <p class="text-sm text-gray-500">or drag and drop file here</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Selected File Display -->
+        @if (selectedFile != null && !isProcessing)
+        {
+            <div class="mt-8">
+                <h3 class="text-2xl font-semibold text-gray-700 mb-4">Selected File</h3>
+                <div class="bg-white rounded-lg p-4 flex justify-between items-center shadow-sm">
+                    <div class="flex items-center">
+                        <i class="fas fa-file-alt text-gray-600 text-2xl mr-4"></i>
+                        <span class="text-gray-700">@selectedFile.Name</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Call to Action Section -->
+            <div class="text-center mt-12">
+                <button @onclick="ProcessFile" class="bg-teal-600 text-white font-bold py-3 px-6 rounded-full hover:bg-teal-700">
+                    Upload and Process
+                </button>
+            </div>
+        }
+    }
+
+    @if (isProcessing)
+    {
+        <div class="bg-white shadow-lg rounded-lg p-4 mb-8 mt-8">
+            <p class="text-lg text-gray-700 mb-4">Processing file... Please wait.</p>
+            <div class="w-full bg-gray-200 rounded-full h-4 dark:bg-gray-700 overflow-hidden">
+                <div class="bg-blue-600 h-4 rounded-full transition-all duration-300 ease-in-out relative overflow-hidden" style="width: @(processingProgress)%">
+                    <div class="absolute top-0 left-0 right-0 bottom-0 bg-blue-400 opacity-75" style="animation: shimmer 2s infinite linear">
+                        <div style="width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent); transform: skewX(-20deg);"></div>
+                    </div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 mt-2 text-center">@processingProgress%</p>
+        </div>
+    }
+
+    @if (isUploaded && extractedPassport != null)
+    {
+        <div class="bg-white shadow-lg rounded-lg p-8">
+            <h2 class="text-3xl font-semibold text-gray-800 mb-6">Extracted Passport Information</h2>
+            <div class="flex flex-wrap -mx-4">
+                <div class="w-full md:w-1/2 px-4 mb-8 md:mb-0" style="position: sticky; top: 1rem;">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Passport Image</h3>
+                    @if (passportSasUrl != null)
+                    {
+                        <div class="relative border border-gray-300 rounded-lg" style="height: 400px; overflow: hidden;">
+                            <div @ref="imageContainer" class="absolute left-0 top-0 w-full h-full overflow: hidden;"
+                                 @onmousedown="StartPan" @onmousemove="Pan" @onmouseup="EndPan" @onmouseleave="EndPan">
+                                <img src="@passportSasUrl"
+                                     alt="Passport"
+                                     style="transform: scale(@zoomLevel) translate(@(panX)px, @(panY)px);"
+                                     @onwheel="OnZoom"
+                                     class="absolute left-0 top-0 w-full h-full object-contain"
+                                     id="passportImage" />
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-center">
+                            <button @onclick="ZoomIn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full mr-2">
+                                <i class="fas fa-search-plus mr-1"></i> Zoom In
+                            </button>
+                            <button @onclick="ZoomOut" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full">
+                                <i class="fas fa-search-minus mr-1"></i> Zoom Out
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-gray-600">No image available.</p>
+                    }
+                </div>
+                <div class="w-full md:w-1/2 px-4">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Extracted Information</h3>
+                    <EditForm Model="@extractedPassport" OnValidSubmit="@SavePassport">
+                        <DataAnnotationsValidator />
+                        <div class="grid grid-cols-1 gap-2">
+                            <div class="mb-2">
+                                <label for="documentNumber" class="block text-gray-700 text-sm font-bold mb-2">Document Number</label>
+                                <InputText id="documentNumber" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.DocumentNumber" />
+                                <ValidationMessage For="@(() => extractedPassport.DocumentNumber)" />
+                                <span class="text-sm text-gray-500">Confidence: @(extractedPassport.DocumentNumberConfidence.ToString("P"))</span>
+                            </div>
+
+                            <div class="mb-2">
+                                <label for="lastName" class="block text-gray-700 text-sm font-bold mb-2">Last Name</label>
+                                <InputText id="lastName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.LastName" />
+                                <ValidationMessage For="@(() => extractedPassport.LastName)" />
+                                <span class="text-sm text-gray-500">Confidence: @(extractedPassport.LastNameConfidence.ToString("P"))</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <div class="mb-2">
+                                    <label for="firstName" class="block text-gray-700 text-sm font-bold mb-2">First Name</label>
+                                    <InputText id="firstName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.FirstName" />
+                                    <ValidationMessage For="@(() => extractedPassport.FirstName)" />
+                                    <span class="text-sm text-gray-500">Confidence: @(extractedPassport.FirstNameConfidence.ToString("P"))</span>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="middleName" class="block text-gray-700 text-sm font-bold mb-2">Middle Name</label>
+                                    <InputText id="middleName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.MiddleName" />
+                                    <ValidationMessage For="@(() => extractedPassport.MiddleName)" />
+                                    @if (!string.IsNullOrWhiteSpace(extractedPassport.MiddleName) && !extractedPassport.IsMiddleNameDerived)
+                                    {
+                                        <span class="text-sm text-gray-500">Confidence: @(extractedPassport.MiddleNameConfidence.ToString("P"))</span>
+                                    }
+                                    @if (extractedPassport.IsMiddleNameDerived)
+                                    {
+                                        <span class="text-sm text-blue-500">Derived from Given Name</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <div class="mb-2">
+                                    <label for="dateOfBirth" class="block text-gray-700 text-sm font-bold mb-2">Date of Birth</label>
+                                    <InputDate id="dateOfBirth" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.DateOfBirth" />
+                                    <ValidationMessage For="@(() => extractedPassport.DateOfBirth)" />
+                                    <span class="text-sm text-gray-500">Confidence: @(extractedPassport.DateOfBirthConfidence.ToString("P"))</span>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="sex" class="block text-gray-700 text-sm font-bold mb-2">Sex</label>
+                                    <InputText id="sex" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.Sex" />
+                                    <ValidationMessage For="@(() => extractedPassport.Sex)" />
+                                    <span class="text-sm text-gray-500">Confidence: @(extractedPassport.SexConfidence.ToString("P"))</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <div class="mb-2">
+                                    <label for="dateOfIssue" class="block text-gray-700 text-sm font-bold mb-2">Date of Issue</label>
+                                    <InputDate id="dateOfIssue" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.DateOfIssue" />
+                                    <ValidationMessage For="@(() => extractedPassport.DateOfIssue)" />
+                                    <span class="text-sm text-gray-500">Confidence: @(extractedPassport.DateOfIssueConfidence.ToString("P"))</span>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="dateOfExpiration" class="block text-gray-700 text-sm font-bold mb-2">Date of Expiration</label>
+                                    <InputDate id="dateOfExpiration" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.DateOfExpiration" />
+                                    <ValidationMessage For="@(() => extractedPassport.DateOfExpiration)" />
+                                    <span class="text-sm text-gray-500">Confidence: @(extractedPassport.DateOfExpirationConfidence.ToString("P"))</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <div class="mb-2">
+                                    <label for="countryRegion" class="block text-gray-700 text-sm font-bold mb-2">Country/Region</label>
+                                    <InputText id="countryRegion" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.CountryRegion" />
+                                    <ValidationMessage For="@(() => extractedPassport.CountryRegion)" />
+                                    <span class="text-sm text-gray-500">Confidence: @(extractedPassport.CountryRegionConfidence.ToString("P"))</span>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="nationality" class="block text-gray-700 text-sm font-bold mb-2">Nationality</label>
+                                    <InputText id="nationality" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.Nationality" />
+                                    <ValidationMessage For="@(() => extractedPassport.Nationality)" />
+                                    <span class="text-sm text-gray-500">Confidence: @(extractedPassport.NationalityConfidence.ToString("P"))</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <label for="placeOfBirth" class="block text-gray-700 text-sm font-bold mb-2">Place of Birth</label>
+                                <InputText id="placeOfBirth" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.PlaceOfBirth" />
+                                <ValidationMessage For="@(() => extractedPassport.PlaceOfBirth)" />
+                                <span class="text-sm text-gray-500">Confidence: @(extractedPassport.PlaceOfBirthConfidence.ToString("P"))</span>
+                            </div>
+
+                            <div class="mb-2">
+                                <label for="issuingAuthority" class="block text-gray-700 text-sm font-bold mb-2">Issuing Authority</label>
+                                <InputText id="issuingAuthority" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.IssuingAuthority" />
+                                <ValidationMessage For="@(() => extractedPassport.IssuingAuthority)" />
+                                <span class="text-sm text-gray-500">Confidence: @(extractedPassport.IssuingAuthorityConfidence.ToString("P"))</span>
+                            </div>
+                        </div>
+                        @* <div class="mb-4">
+                                <label for="placeOfIssue" class="block text-gray-700 text-sm font-bold mb-2">Place of Issue</label>
+                                <InputText id="placeOfIssue" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.PlaceOfIssue" />
+                                <ValidationMessage For="@(() => extractedPassport.PlaceOfIssue)" />
+                                <span class="text-sm text-gray-500">Confidence: @(extractedPassport.PlaceOfIssueConfidence.ToString("P"))</span>
+                                </div> *@
+                                    @* <div class="mb-4">
+                                <label for="personalNumber" class="block text-gray-700 text-sm font-bold mb-2">Personal Number</label>
+                                <InputText id="personalNumber" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" @bind-Value="extractedPassport.PersonalNumber" />
+                                <ValidationMessage For="@(() => extractedPassport.PersonalNumber)" />
+                                <span class="text-sm text-gray-500">Confidence: @(extractedPassport.PersonalNumberConfidence.ToString("P"))</span>
+                            </div> *@
+                        <div class="flex items-center justify-between mt-6">
+                            <button type="submit" class="bg-teal-500 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline">
+                                <i class="fas fa-save mr-2"></i> Save
+                            </button>
+                            <button type="button" @onclick="ResetForm" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline">
+                                <i class="fas fa-times mr-2"></i> Cancel
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private IBrowserFile selectedFile;
+    private bool isUploaded = false;
+    private bool isProcessing = false;
+    private int processingProgress = 0;
+    private Passport extractedPassport;
+    private string passportSasUrl;
+    private double zoomLevel = 1.0;
+
+    private System.Timers.Timer progressTimer;
+
+    private async Task HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        isUploaded = false;
+        extractedPassport = null;
+    }
+
+    private async Task ProcessFile()
+    {
+        if (selectedFile == null) return;
+
+        isProcessing = true;
+        processingProgress = 0;
+
+        progressTimer = new System.Timers.Timer(40); // Update every 40ms for faster progress
+        progressTimer.Elapsed += async (sender, e) =>
+        {
+            await InvokeAsync(() =>
+            {
+                if (processingProgress < 99)
+                {
+                    processingProgress += 4; // Increase by 2% each time
+                    StateHasChanged();
+                }
+            });
+        };
+        progressTimer.Start();
+
+        try
+        {
+            Console.WriteLine($"Processing file: {selectedFile.Name}");
+            using (var stream = selectedFile.OpenReadStream(10 * 1024 * 1024)) // 10MB limit
+            {
+                Console.WriteLine($"File size: {stream.Length} bytes");
+
+                using (var memoryStream = new MemoryStream())
+                {
+                    await stream.CopyToAsync(memoryStream);
+                    memoryStream.Position = 0;
+
+                    var guid = Guid.NewGuid().ToString();
+                    var fileExtension = Path.GetExtension(selectedFile.Name);
+                    var uniqueFileName = $"{guid}{fileExtension}";
+
+                    Console.WriteLine("Uploading file to Azure Blob Storage...");
+                    string blobUri = await AzureBlobService.UploadFileAsync(memoryStream, uniqueFileName, uniqueFileName);
+
+                    passportSasUrl = blobUri;
+
+                    memoryStream.Position = 0;
+
+                    Console.WriteLine("Calling DocumentIntelligenceService with Blob URI...");
+                    extractedPassport = await DocumentIntelligenceService.AnalyzePassportFromUrlAsync(blobUri);
+
+                    isUploaded = true;
+                    Console.WriteLine("Document analysis completed successfully");
+
+                    extractedPassport.FileName = uniqueFileName;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error processing file {selectedFile.Name}: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+        finally
+        {
+            progressTimer.Stop();
+            progressTimer.Dispose();
+            await InvokeAsync(() =>
+            {
+                processingProgress = 100;
+                isProcessing = false;
+                StateHasChanged();
+            });
+        }
+    }
+
+    private async Task SavePassport()
+    {
+        if (extractedPassport != null)
+        {
+            await DatabaseService.SavePassport(extractedPassport);
+            ResetForm();
+        }
+    }
+
+    private void ResetForm()
+    {
+        selectedFile = null;
+        isUploaded = false;
+        extractedPassport = null;
+        passportSasUrl = null;
+        zoomLevel = 1.0;
+    }
+
+    private ElementReference imageContainer;
+    private double panX = 0;
+    private double panY = 0;
+    private bool isPanning = false;
+    private double startX;
+    private double startY;
+
+    private void ZoomIn()
+    {
+        zoomLevel *= 1.2;
+        ClampPan();
+    }
+
+    private void ZoomOut()
+    {
+        zoomLevel /= 1.2;
+        ClampPan();
+    }
+
+    private void OnZoom(WheelEventArgs e)
+    {
+        if (e.DeltaY < 0)
+        {
+            ZoomIn();
+        }
+        else
+        {
+            ZoomOut();
+        }
+    }
+
+    private void StartPan(MouseEventArgs e)
+    {
+        isPanning = true;
+        startX = e.ClientX - panX;
+        startY = e.ClientY - panY;
+    }
+
+    private void Pan(MouseEventArgs e)
+    {
+        if (isPanning)
+        {
+            panX = e.ClientX - startX;
+            panY = e.ClientY - startY;
+            ClampPan();
+        }
+    }
+
+    private void EndPan(MouseEventArgs e)
+    {
+        isPanning = false;
+    }
+
+    private void ClampPan()
+    {
+        var scaledWidth = 400 * zoomLevel; // Assuming the container width is 400px
+        var scaledHeight = 400 * zoomLevel; // Assuming the container height is 400px
+
+        panX = Math.Max(Math.Min(panX, scaledWidth - 400), 400 - scaledWidth);
+        panY = Math.Max(Math.Min(panY, scaledHeight - 400), 400 - scaledHeight);
+    }
+}
